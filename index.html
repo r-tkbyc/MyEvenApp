@@ -2,12 +2,22 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ring-test</title>
+    <title>R1 Ring Tester</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <p style="font-family:monospace;padding:16px;color:#888">Loading Ring Tester...</p>
+    </div>
+    <script>
+      // Global error handler — shows errors even if React fails to load
+      window.onerror = function(msg, src, line, col, err) {
+        var el = document.getElementById('root');
+        el.innerHTML = '<pre style="font-family:monospace;padding:16px;color:red;white-space:pre-wrap">'
+          + 'JS Error:\n' + msg + '\n' + src + ':' + line + ':' + col
+          + (err ? '\n' + err.stack : '') + '</pre>';
+      };
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
