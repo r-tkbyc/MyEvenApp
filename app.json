@@ -1,0 +1,14 @@
+{
+  "package_id": "com.takemotions.ringtest",
+  "edition": "202603",
+  "name": "Ring Test",
+  "version": "1.0.0",
+  "min_app_version": "0.1.0",
+  "tagline": "R1 Ring input tester for Even G2",
+  "description": "Test all R1 ring inputs (tap, double-tap, swipe up/down) with real-time event logging on G2 glasses display.",
+  "author": "TakeMotions",
+  "entrypoint": "index.html",
+  "permissions": {
+    "network": ["*"]
+  }
+}

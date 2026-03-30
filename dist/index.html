@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>R1 Ring Tester</title>
+    <script type="module" crossorigin src="/MyEvenApp/assets/index-DD0PEdwA.js"></script>
+    <link rel="stylesheet" crossorigin href="/MyEvenApp/assets/index-Cw4JplYp.css">
+  </head>
+  <body>
+    <div id="root">
+      <p id="status" style="font-family:monospace;padding:16px;color:#888">Loading Ring Tester...</p>
+    </div>
+    <div id="debug" style="font-family:monospace;padding:16px;font-size:11px;color:#666;white-space:pre-wrap"></div>
+    <script>
+      // Debug log visible on screen
+      function debugLog(msg) {
+        var el = document.getElementById('debug');
+        if (el) el.textContent += new Date().toLocaleTimeString() + ' ' + msg + '\n';
+      }
+
+      // Catch all JS errors
+      window.onerror = function(msg, src, line, col, err) {
+        debugLog('ERROR: ' + msg + ' at ' + src + ':' + line);
+        if (err && err.stack) debugLog('Stack: ' + err.stack);
+      };
+
+      // Catch unhandled promise rejections (module load failures)
+      window.onunhandledrejection = function(e) {
+        var reason = e.reason;
+        var msg = reason instanceof Error ? reason.message + '\n' + reason.stack : String(reason);
+        debugLog('UNHANDLED REJECTION: ' + msg);
+      };
+
+      debugLog('HTML loaded, waiting for JS module...');
+    </script>
+  </body>
+</html>
