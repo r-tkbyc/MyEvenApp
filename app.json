@@ -1,11 +1,7 @@
 {
-  "package_id": "com.taker.eventimer",
-  "edition": "202601",
-  "name": "EvenTimer",
+  "name": "Even Sliding Puzzle",
   "version": "1.0.0",
-  "min_app_version": "1.0.0",
-  "tagline": "Simple timer app for Even G2",
-  "description": "Simple timer app for Even G2 smart glasses",
-  "author": "taker",
-  "entrypoint": "index.html"
+  "home": "index.html",
+  "icon": "icon.png",
+  "description": "A classic 3x3 sliding puzzle game."
 }

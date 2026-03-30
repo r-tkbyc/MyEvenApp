@@ -1,129 +1,156 @@
 import type { EvenAppBridge } from '@evenrealities/even_hub_sdk'
 
+// ─── Screen types ──────────────────────────────────────────────────────────
+export type Screen = 'title' | 'game' | 'game_menu'
+
+// ─── Grid size options ─────────────────────────────────────────────────────
+export const GRID_SIZES = [3, 4] as const
+export type GridSize = (typeof GRID_SIZES)[number]
+
+// Number of random shuffle moves per grid size
+const SHUFFLE_MOVES: Record<GridSize, number> = { 3: 300, 4: 1000 }
+
+// ─── Menu items ────────────────────────────────────────────────────────────
+export const TITLE_MENU_ITEMS = ['3x3', '4x4'] as const
+export const GAME_MENU_ITEMS  = ['Back', 'Reset', 'Title'] as const
+
+// ─── Shared app state ─────────────────────────────────────────────────────
 export const state = {
-  screen: 'preset' as 'preset' | 'timer',
-  presetIndex: 0, // 0: 5 min, 1: 3 min, 2: Manual
-  hours: 0,
-  minutes: 0,
-  seconds: 0,
-  running: false,
-  focusIndex: 0, // 0: HH, 1: MM, 2: SS, 3: Start, 4: Stop, 5: Reset
+  // Navigation
+  screen: 'title' as Screen,
+
+  // Title screen
+  titleMenuIndex: 0,  // index into TITLE_MENU_ITEMS
+
+  // Game menu
+  gameMenuIndex: 0,   // index into GAME_MENU_ITEMS
+
+  // Game
+  gridSize: 3 as GridSize,
+  board: [] as number[],
+  blankIndex: -1,
+  movableIndices: [] as number[],
+  focusIndex: 0,
+  moves: 0,
+  isSolved: false,
 }
 
 export let bridge: EvenAppBridge | null = null
+export function setBridge(b: EvenAppBridge): void { bridge = b }
 
-export function setBridge(b: EvenAppBridge): void {
-  bridge = b
+// ─── Helpers ───────────────────────────────────────────────────────────────
+export function totalTiles(): number { return state.gridSize * state.gridSize }
+
+// ─── Board logic ───────────────────────────────────────────────────────────
+export function checkSolved(): boolean {
+  const total = totalTiles()
+  for (let i = 0; i < total - 1; i++) {
+    if (state.board[i] !== i + 1) return false
+  }
+  return true
 }
 
-export function resetTimer(): void {
-  // Go back to the preset selection screen
-  state.screen = 'preset'
-  state.presetIndex = 0
-  
-  state.hours = 0
-  state.minutes = 0
-  state.seconds = 0
-  state.running = false
+export function updateMovableIndices(): void {
+  const gs = state.gridSize
+  const movables: number[] = []
+  const bRow = Math.floor(state.blankIndex / gs)
+  const bCol = state.blankIndex % gs
+  if (bRow > 0)      movables.push(state.blankIndex - gs)
+  if (bCol < gs - 1) movables.push(state.blankIndex + 1)
+  if (bRow < gs - 1) movables.push(state.blankIndex + gs)
+  if (bCol > 0)      movables.push(state.blankIndex - 1)
+  state.movableIndices = movables.sort((a, b) => a - b)
+  if (state.focusIndex >= state.movableIndices.length) state.focusIndex = 0
+}
+
+export function moveFocusedTile(): void {
+  if (state.isSolved || state.movableIndices.length === 0) return
+  const tileIndex = state.movableIndices[state.focusIndex]
+  state.board[state.blankIndex] = state.board[tileIndex]
+  state.board[tileIndex] = 0
+  state.blankIndex = tileIndex
+  state.moves += 1
+  state.isSolved = checkSolved()
+  updateMovableIndices()
+}
+
+export function cycleFocusForward(): void {
+  if (state.isSolved || state.movableIndices.length === 0) return
+  state.focusIndex = (state.focusIndex + 1) % state.movableIndices.length
+}
+
+export function cycleFocusBackward(): void {
+  if (state.isSolved || state.movableIndices.length === 0) return
+  state.focusIndex =
+    (state.focusIndex - 1 + state.movableIndices.length) % state.movableIndices.length
+}
+
+export function initBoard(gs?: GridSize): void {
+  if (gs !== undefined) state.gridSize = gs
+  const total = totalTiles()
+
+  // Build solved board [1, 2, …, n-1, 0]
+  state.board = []
+  for (let i = 1; i < total; i++) state.board.push(i)
+  state.board.push(0)
+  state.blankIndex = total - 1
+  updateMovableIndices()
+
+  // Shuffle via random valid moves (guarantees solvability)
+  let shuffles = SHUFFLE_MOVES[state.gridSize]
+  let prevBlank = -1
+  while (shuffles > 0) {
+    const candidates = state.movableIndices.filter(i => i !== prevBlank)
+    const pool = candidates.length > 0 ? candidates : state.movableIndices
+    const tileIdx = pool[Math.floor(Math.random() * pool.length)]
+    state.board[state.blankIndex] = state.board[tileIdx]
+    state.board[tileIdx] = 0
+    prevBlank = state.blankIndex
+    state.blankIndex = tileIdx
+    updateMovableIndices()
+    shuffles--
+  }
+
+  state.moves = 0
+  state.isSolved = false
   state.focusIndex = 0
+  updateMovableIndices()
 }
 
-export function startTimer(): void {
-  const totalSeconds = state.hours * 3600 + state.minutes * 60 + state.seconds
-  if (totalSeconds > 0) {
-    state.running = true
-  }
+// ─── Title menu navigation ─────────────────────────────────────────────────
+export function cycleTitleMenuForward(): void {
+  state.titleMenuIndex = (state.titleMenuIndex + 1) % TITLE_MENU_ITEMS.length
+}
+export function cycleTitleMenuBackward(): void {
+  state.titleMenuIndex =
+    (state.titleMenuIndex - 1 + TITLE_MENU_ITEMS.length) % TITLE_MENU_ITEMS.length
+}
+export function startGame(): void {
+  const gs = GRID_SIZES[state.titleMenuIndex]
+  initBoard(gs)
+  state.screen = 'game'
 }
 
-export function stopTimer(): void {
-  state.running = false
+// ─── Game menu navigation ──────────────────────────────────────────────────
+export function cycleGameMenuForward(): void {
+  state.gameMenuIndex = (state.gameMenuIndex + 1) % GAME_MENU_ITEMS.length
 }
-
-export function tick(): void {
-  if (!state.running) return
-  
-  let totalSeconds = state.hours * 3600 + state.minutes * 60 + state.seconds
-  if (totalSeconds > 0) {
-    totalSeconds -= 1
-    state.hours = Math.floor(totalSeconds / 3600)
-    state.minutes = Math.floor((totalSeconds % 3600) / 60)
-    state.seconds = totalSeconds % 60
-  }
-  
-  if (totalSeconds === 0) {
-    state.running = false
-    // Move focus to Reset when finished
-    state.focusIndex = 5
-  }
+export function cycleGameMenuBackward(): void {
+  state.gameMenuIndex =
+    (state.gameMenuIndex - 1 + GAME_MENU_ITEMS.length) % GAME_MENU_ITEMS.length
 }
-
-// Logic for button increments
-export function incrementFocused(): void {
-  if (state.screen === 'preset') {
-    state.presetIndex = state.presetIndex === 0 ? 2 : state.presetIndex - 1
-    return
-  }
-  
-  if (state.running) return // Can't edit while running
-  if (state.focusIndex === 0) {
-    state.hours = (state.hours + 1) % 100
-  } else if (state.focusIndex === 1) {
-    state.minutes = (state.minutes + 1) % 60
-  } else if (state.focusIndex === 2) {
-    state.seconds = (state.seconds + 1) % 60
-  }
-}
-
-export function decrementFocused(): void {
-  if (state.screen === 'preset') {
-    state.presetIndex = (state.presetIndex + 1) % 3
-    return
-  }
-
-  if (state.running) return
-  if (state.focusIndex === 0) {
-    state.hours = state.hours === 0 ? 99 : state.hours - 1
-  } else if (state.focusIndex === 1) {
-    state.minutes = state.minutes === 0 ? 59 : state.minutes - 1
-  } else if (state.focusIndex === 2) {
-    state.seconds = state.seconds === 0 ? 59 : state.seconds - 1
-  }
-}
-
-export function cycleFocus(): void {
-  if (state.screen === 'preset') {
-    state.presetIndex = (state.presetIndex + 1) % 3
-    return
-  }
-  
-  state.focusIndex = (state.focusIndex + 1) % 6
-}
-
-export function activateFocused(): void {
-  if (state.screen === 'preset') {
-    // Apply preset and transition to timer screen
-    state.hours = 0
-    state.seconds = 0
-    if (state.presetIndex === 0) {
-      state.minutes = 5 // 5 minutes
-    } else if (state.presetIndex === 1) {
-      state.minutes = 3 // 3 minutes
-    } else {
-      state.minutes = 0 // Manual
-    }
-    
-    // Switch to timer screen and focus the Start button
-    state.screen = 'timer'
-    state.focusIndex = 3
-    state.running = false
-    return
-  }
-
-  if (state.focusIndex === 3) {
-    startTimer()
-  } else if (state.focusIndex === 4) {
-    stopTimer()
-  } else if (state.focusIndex === 5) {
-    resetTimer()
+export function executeGameMenu(): void {
+  switch (state.gameMenuIndex) {
+    case 0: // Back — resume the current game
+      state.screen = 'game'
+      break
+    case 1: // Reset — restart with same grid size
+      initBoard(state.gridSize)
+      state.screen = 'game'
+      break
+    case 2: // Title — return to mode-select screen
+      state.screen = 'title'
+      state.titleMenuIndex = 0
+      break
   }
 }
