@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Even G2 Navigation Test</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f4f4f9; gap: 30px; }
+        #status { padding: 25px; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); width: 350px; text-align: center; color: #333; font-weight: 500; }
+        /* シックなグレーのボタン */
+        #resetBtn { padding: 12px 30px; font-size: 0.9rem; cursor: pointer; background-color: #6c757d; color: white; border: none; border-radius: 6px; letter-spacing: 1px; transition: all 0.3s ease; }
+        #resetBtn:hover { background-color: #5a6268; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        #resetBtn:disabled { background-color: #adb5bd; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div id="status">Waiting for Even G2...</div>
+    <button id="resetBtn" disabled>RESET DISPLAY</button>
+    <script type="module" src="/main.ts"></script>
+</body>
+</html>
