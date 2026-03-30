@@ -1,110 +1,97 @@
-import { useSyncExternalStore } from 'react';
-import { AppGlasses } from './glass/AppGlasses';
-import { getState, subscribe, setScreen, resetCounter } from './store';
-import type { AppState } from './store';
+import { useEffect, useSyncExternalStore } from 'react';
+import { getState, subscribe } from './store';
+import { initBridge } from './bridge';
 
-const SCREEN_LABELS: Record<AppState['screen'], string> = {
-  log: 'Event Log',
-  list: 'List Test',
-  scroll: 'Scroll Test',
-  counter: 'Tap Counter',
+const LEVEL_COLORS: Record<string, string> = {
+  info: '#0f0',
+  event: '#ff0',
+  error: '#f44',
+  warn: '#fa0',
 };
 
 function App() {
   const state = useSyncExternalStore(subscribe, getState);
 
+  useEffect(() => {
+    initBridge();
+  }, []);
+
   return (
-    <div style={{ fontFamily: 'monospace', maxWidth: 480, margin: '0 auto', padding: 16 }}>
-      <AppGlasses />
+    <div style={{ fontFamily: 'monospace', maxWidth: 500, margin: '0 auto', padding: 16 }}>
+      <h1 style={{ fontSize: 20, marginBottom: 4 }}>R1 Ring Tester</h1>
 
-      <h1 style={{ fontSize: 20, marginBottom: 8 }}>R1 Ring Tester</h1>
-      <p style={{ fontSize: 12, color: '#888', marginBottom: 16 }}>
-        G2 glasses display mirrors the current test screen.
-        Use R1 ring or keyboard (arrows/enter/esc) to interact.
-      </p>
+      {/* Bridge Status */}
+      <div style={{
+        padding: 10, borderRadius: 8, marginBottom: 12,
+        background: state.bridgeStatus === 'ready' ? '#e8f5e9'
+          : state.bridgeStatus === 'error' ? '#ffebee'
+          : '#fff3e0',
+        border: `1px solid ${state.bridgeStatus === 'ready' ? '#4caf50' : state.bridgeStatus === 'error' ? '#f44336' : '#ff9800'}`,
+      }}>
+        <strong>Bridge: </strong>
+        {state.bridgeStatus === 'waiting' && 'Waiting...'}
+        {state.bridgeStatus === 'initializing' && 'Initializing...'}
+        {state.bridgeStatus === 'ready' && 'Connected'}
+        {state.bridgeStatus === 'error' && `Error: ${state.bridgeError}`}
+      </div>
 
-      {/* Screen selector */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        {(Object.keys(SCREEN_LABELS) as AppState['screen'][]).map(s => (
-          <button
-            key={s}
-            onClick={() => { setScreen(s); if (s === 'counter') resetCounter(); }}
-            style={{
-              padding: '6px 12px',
-              border: state.screen === s ? '2px solid #333' : '1px solid #ccc',
-              borderRadius: 6,
-              background: state.screen === s ? '#333' : '#fff',
-              color: state.screen === s ? '#fff' : '#333',
-              cursor: 'pointer',
-              fontSize: 13,
-            }}
-          >
-            {SCREEN_LABELS[s]}
-          </button>
+      {/* Event Counters */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12,
+      }}>
+        {[
+          { label: 'Tap', count: state.tapCount, color: '#ff0' },
+          { label: 'Double Tap', count: state.doubleTapCount, color: '#f80' },
+          { label: 'Swipe Up', count: state.swipeUpCount, color: '#0ff' },
+          { label: 'Swipe Down', count: state.swipeDownCount, color: '#0af' },
+        ].map(({ label, count, color }) => (
+          <div key={label} style={{
+            background: '#f5f5f5', borderRadius: 8, padding: 10, textAlign: 'center',
+            borderLeft: `4px solid ${color}`,
+          }}>
+            <div style={{ fontSize: 24, fontWeight: 'bold' }}>{count}</div>
+            <div style={{ fontSize: 11, color: '#888' }}>{label}</div>
+          </div>
         ))}
       </div>
 
-      {/* Current screen info */}
-      <div style={{
-        background: '#f5f5f5', borderRadius: 8, padding: 12, marginBottom: 16,
-      }}>
-        <div style={{ fontWeight: 'bold', marginBottom: 4 }}>
-          Current: {SCREEN_LABELS[state.screen]}
+      {/* Last Raw Event */}
+      {state.lastRawEvent && (
+        <div style={{
+          background: '#f0f0f0', borderRadius: 6, padding: 8, marginBottom: 12,
+          fontSize: 10, wordBreak: 'break-all', color: '#666',
+        }}>
+          <strong>Last raw event:</strong><br />
+          {state.lastRawEvent}
         </div>
-        {state.screen === 'list' && (
-          <div>Selected index: {state.listIndex}</div>
-        )}
-        {state.screen === 'scroll' && (
-          <div>Scroll position: {state.scrollPos + 1}/10</div>
-        )}
-        {state.screen === 'counter' && (
-          <div>Count: {state.counter}</div>
-        )}
-      </div>
+      )}
 
-      {/* Event log */}
-      <h2 style={{ fontSize: 16, marginBottom: 8 }}>Event Log ({state.events.length})</h2>
+      {/* Log */}
+      <h2 style={{ fontSize: 14, marginBottom: 6 }}>
+        Diagnostic Log ({state.logs.length})
+      </h2>
       <div style={{
-        background: '#1a1a1a', color: '#0f0', borderRadius: 8,
-        padding: 12, maxHeight: 400, overflowY: 'auto', fontSize: 12,
+        background: '#1a1a1a', borderRadius: 8, padding: 10,
+        maxHeight: 350, overflowY: 'auto', fontSize: 11, lineHeight: 1.4,
       }}>
-        {state.events.length === 0 ? (
-          <div style={{ color: '#666' }}>Waiting for R1 ring input...</div>
+        {state.logs.length === 0 ? (
+          <div style={{ color: '#666' }}>Initializing...</div>
         ) : (
-          state.events.map(ev => (
-            <div key={ev.id} style={{ marginBottom: 2 }}>
-              <span style={{ color: '#888' }}>{ev.time}</span>{' '}
-              <span style={{
-                color: ev.type.includes('TAP') ? '#ff0' :
-                       ev.type.includes('SWIPE') ? '#0ff' : '#0f0'
-              }}>
-                {ev.type}
-              </span>{' '}
-              <span style={{ color: '#666' }}>{ev.raw}</span>
+          state.logs.map(log => (
+            <div key={log.id} style={{ marginBottom: 1 }}>
+              <span style={{ color: '#666' }}>{log.time} </span>
+              <span style={{ color: LEVEL_COLORS[log.level] ?? '#fff' }}>
+                {log.message}
+              </span>
             </div>
           ))
         )}
       </div>
 
-      {/* Usage guide */}
-      <div style={{ marginTop: 16, fontSize: 12, color: '#888' }}>
-        <strong>R1 Ring Controls:</strong>
-        <table style={{ marginTop: 4, borderCollapse: 'collapse', width: '100%' }}>
-          <tbody>
-            {[
-              ['Single Tap', 'Select / Confirm', 'Enter'],
-              ['Double Tap', 'Go Back', 'Esc'],
-              ['Swipe Forward', 'Move Down', 'Arrow Down'],
-              ['Swipe Backward', 'Move Up', 'Arrow Up'],
-            ].map(([ring, action, key]) => (
-              <tr key={ring} style={{ borderBottom: '1px solid #eee' }}>
-                <td style={{ padding: '4px 8px' }}>{ring}</td>
-                <td style={{ padding: '4px 8px' }}>{action}</td>
-                <td style={{ padding: '4px 8px', color: '#bbb' }}>({key})</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Help */}
+      <div style={{ marginTop: 12, fontSize: 11, color: '#999' }}>
+        This app must be opened inside Even App (via QR scan or Even Hub).
+        The diagnostic log shows every step of bridge initialization and all raw events from the R1 ring.
       </div>
     </div>
   );
