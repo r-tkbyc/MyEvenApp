@@ -1,8 +1,17 @@
-export interface AppModule {
+export type SetStatus = (text: string) => void
+
+export type AppActions = {
+  connect: () => Promise<void>
+  action: () => Promise<void>
+}
+
+export type AppModule = {
+  id: string
   name: string
+  pageTitle?: string
+  connectLabel?: string
+  actionLabel?: string
   initialStatus?: string
-  createActions: (updateStatus: (text: string) => void) => Promise<{
-    connect: () => Promise<void>
-    action: () => void
-  }>
+  autoConnect?: boolean
+  createActions: (setStatus: SetStatus) => Promise<AppActions> | AppActions
 }

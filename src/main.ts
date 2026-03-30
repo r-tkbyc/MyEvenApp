@@ -15,14 +15,6 @@ async function boot() {
 
   const actions = await app.createActions(updateStatus)
   await actions.connect()
-  
-  // The 'action' function will be bound to Reset for the browser
-  const btn = document.getElementById('btn-reset')
-  if (btn) {
-    btn.onclick = () => {
-      actions.action()
-    }
-  }
 }
 
 void boot().catch((error) => {

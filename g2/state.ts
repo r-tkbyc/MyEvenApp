@@ -1,156 +1,89 @@
 import type { EvenAppBridge } from '@evenrealities/even_hub_sdk'
+import { appendEventLog } from '../_shared/log'
+import { COLS, ROWS, PADDLE_H, BALL_SPEED_INIT } from './layout'
 
-// ─── Screen types ──────────────────────────────────────────────────────────
-export type Screen = 'title' | 'game' | 'game_menu'
+export type GameState = {
+  playerY: number
+  aiY: number
+  ballX: number
+  ballY: number
+  ballDx: number
+  ballDy: number
+  ballSpeed: number
+  playerScore: number
+  aiScore: number
+  running: boolean
+  over: boolean
+  rally: number
+  highScore: number
+}
 
-// ─── Grid size options ─────────────────────────────────────────────────────
-export const GRID_SIZES = [3, 4] as const
-export type GridSize = (typeof GRID_SIZES)[number]
+export function resetGame(): void {
+  game.playerY = (ROWS - PADDLE_H) / 2
+  game.aiY = (ROWS - PADDLE_H) / 2
+  game.playerScore = 0
+  game.aiScore = 0
+  game.rally = 0
+  game.running = true
+  game.over = false
+  serveBall()
+}
 
-// Number of random shuffle moves per grid size
-const SHUFFLE_MOVES: Record<GridSize, number> = { 3: 300, 4: 1000 }
+export function serveBall(): void {
+  game.ballX = COLS / 2
+  game.ballY = ROWS / 2
+  game.ballSpeed = BALL_SPEED_INIT
+  game.rally = 0
+  const angle = (Math.random() - 0.5) * Math.PI / 3
+  const dir = Math.random() > 0.5 ? 1 : -1
+  game.ballDx = dir * Math.cos(angle)
+  game.ballDy = Math.sin(angle)
+}
 
-// ─── Menu items ────────────────────────────────────────────────────────────
-export const TITLE_MENU_ITEMS = ['3x3', '4x4'] as const
-export const GAME_MENU_ITEMS  = ['Back', 'Reset', 'Title'] as const
+export const game: GameState = {
+  playerY: (ROWS - PADDLE_H) / 2,
+  aiY: (ROWS - PADDLE_H) / 2,
+  ballX: COLS / 2,
+  ballY: ROWS / 2,
+  ballDx: 1,
+  ballDy: 0,
+  ballSpeed: BALL_SPEED_INIT,
+  playerScore: 0,
+  aiScore: 0,
+  running: false,
+  over: false,
+  rally: 0,
+  highScore: 0,
+}
 
-// ─── Shared app state ─────────────────────────────────────────────────────
-export const state = {
-  // Navigation
-  screen: 'title' as Screen,
+export async function fetchBestScore(): Promise<number> {
+  appendEventLog('Score: fetching best score')
+  const res = await fetch('/api/best-score')
+  appendEventLog(`Score: GET status=${res.status}`)
+  const data = await res.json()
+  appendEventLog(`Score: GET response=${JSON.stringify(data)}`)
+  const score: number = data.score ?? 0
+  if (score > game.highScore) {
+    game.highScore = score
+  }
+  return game.highScore
+}
 
-  // Title screen
-  titleMenuIndex: 0,  // index into TITLE_MENU_ITEMS
-
-  // Game menu
-  gameMenuIndex: 0,   // index into GAME_MENU_ITEMS
-
-  // Game
-  gridSize: 3 as GridSize,
-  board: [] as number[],
-  blankIndex: -1,
-  movableIndices: [] as number[],
-  focusIndex: 0,
-  moves: 0,
-  isSolved: false,
+export async function submitScore(score: number): Promise<void> {
+  appendEventLog(`Score: submitting score=${score}`)
+  const res = await fetch('/api/best-score', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ score }),
+  })
+  appendEventLog(`Score: POST status=${res.status}`)
+  const data = await res.json()
+  appendEventLog(`Score: POST response=${JSON.stringify(data)}`)
+  game.highScore = data.score ?? score
 }
 
 export let bridge: EvenAppBridge | null = null
-export function setBridge(b: EvenAppBridge): void { bridge = b }
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
-export function totalTiles(): number { return state.gridSize * state.gridSize }
-
-// ─── Board logic ───────────────────────────────────────────────────────────
-export function checkSolved(): boolean {
-  const total = totalTiles()
-  for (let i = 0; i < total - 1; i++) {
-    if (state.board[i] !== i + 1) return false
-  }
-  return true
-}
-
-export function updateMovableIndices(): void {
-  const gs = state.gridSize
-  const movables: number[] = []
-  const bRow = Math.floor(state.blankIndex / gs)
-  const bCol = state.blankIndex % gs
-  if (bRow > 0)      movables.push(state.blankIndex - gs)
-  if (bCol < gs - 1) movables.push(state.blankIndex + 1)
-  if (bRow < gs - 1) movables.push(state.blankIndex + gs)
-  if (bCol > 0)      movables.push(state.blankIndex - 1)
-  state.movableIndices = movables.sort((a, b) => a - b)
-  if (state.focusIndex >= state.movableIndices.length) state.focusIndex = 0
-}
-
-export function moveFocusedTile(): void {
-  if (state.isSolved || state.movableIndices.length === 0) return
-  const tileIndex = state.movableIndices[state.focusIndex]
-  state.board[state.blankIndex] = state.board[tileIndex]
-  state.board[tileIndex] = 0
-  state.blankIndex = tileIndex
-  state.moves += 1
-  state.isSolved = checkSolved()
-  updateMovableIndices()
-}
-
-export function cycleFocusForward(): void {
-  if (state.isSolved || state.movableIndices.length === 0) return
-  state.focusIndex = (state.focusIndex + 1) % state.movableIndices.length
-}
-
-export function cycleFocusBackward(): void {
-  if (state.isSolved || state.movableIndices.length === 0) return
-  state.focusIndex =
-    (state.focusIndex - 1 + state.movableIndices.length) % state.movableIndices.length
-}
-
-export function initBoard(gs?: GridSize): void {
-  if (gs !== undefined) state.gridSize = gs
-  const total = totalTiles()
-
-  // Build solved board [1, 2, …, n-1, 0]
-  state.board = []
-  for (let i = 1; i < total; i++) state.board.push(i)
-  state.board.push(0)
-  state.blankIndex = total - 1
-  updateMovableIndices()
-
-  // Shuffle via random valid moves (guarantees solvability)
-  let shuffles = SHUFFLE_MOVES[state.gridSize]
-  let prevBlank = -1
-  while (shuffles > 0) {
-    const candidates = state.movableIndices.filter(i => i !== prevBlank)
-    const pool = candidates.length > 0 ? candidates : state.movableIndices
-    const tileIdx = pool[Math.floor(Math.random() * pool.length)]
-    state.board[state.blankIndex] = state.board[tileIdx]
-    state.board[tileIdx] = 0
-    prevBlank = state.blankIndex
-    state.blankIndex = tileIdx
-    updateMovableIndices()
-    shuffles--
-  }
-
-  state.moves = 0
-  state.isSolved = false
-  state.focusIndex = 0
-  updateMovableIndices()
-}
-
-// ─── Title menu navigation ─────────────────────────────────────────────────
-export function cycleTitleMenuForward(): void {
-  state.titleMenuIndex = (state.titleMenuIndex + 1) % TITLE_MENU_ITEMS.length
-}
-export function cycleTitleMenuBackward(): void {
-  state.titleMenuIndex =
-    (state.titleMenuIndex - 1 + TITLE_MENU_ITEMS.length) % TITLE_MENU_ITEMS.length
-}
-export function startGame(): void {
-  const gs = GRID_SIZES[state.titleMenuIndex]
-  initBoard(gs)
-  state.screen = 'game'
-}
-
-// ─── Game menu navigation ──────────────────────────────────────────────────
-export function cycleGameMenuForward(): void {
-  state.gameMenuIndex = (state.gameMenuIndex + 1) % GAME_MENU_ITEMS.length
-}
-export function cycleGameMenuBackward(): void {
-  state.gameMenuIndex =
-    (state.gameMenuIndex - 1 + GAME_MENU_ITEMS.length) % GAME_MENU_ITEMS.length
-}
-export function executeGameMenu(): void {
-  switch (state.gameMenuIndex) {
-    case 0: // Back — resume the current game
-      state.screen = 'game'
-      break
-    case 1: // Reset — restart with same grid size
-      initBoard(state.gridSize)
-      state.screen = 'game'
-      break
-    case 2: // Title — return to mode-select screen
-      state.screen = 'title'
-      state.titleMenuIndex = 0
-      break
-  }
+export function setBridge(b: EvenAppBridge): void {
+  bridge = b
 }

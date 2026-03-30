@@ -1,7 +1,8 @@
 {
-  "name": "Even Sliding Puzzle",
+  "package_id": "com.nickustinov.pong",
+  "name": "pong",
   "version": "1.0.0",
-  "home": "index.html",
-  "icon": "icon.png",
-  "description": "A classic 3x3 sliding puzzle game."
+  "description": "Pong game for Even G2 smart glasses",
+  "author": "nickustinov",
+  "entrypoint": "index.html"
 }

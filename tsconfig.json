@@ -1,20 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
-    "lib": ["ESNext", "DOM"],
-    "moduleResolution": "Node",
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
     "strict": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
     "esModuleInterop": true,
-    "noEmit": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "jsx": "react-jsx",
+    "noEmit": true
   },
   "include": ["src", "g2", "_shared"]
 }
