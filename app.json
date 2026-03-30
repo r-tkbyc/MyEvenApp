@@ -1,0 +1,11 @@
+{
+  "package_id": "com.taker.eventimer",
+  "edition": "202601",
+  "name": "EvenTimer",
+  "version": "1.0.0",
+  "min_app_version": "1.0.0",
+  "tagline": "Simple timer app for Even G2",
+  "description": "Simple timer app for Even G2 smart glasses",
+  "author": "taker",
+  "entrypoint": "index.html"
+}
