@@ -1,37 +1,25 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>R1 Ring Tester</title>
-  </head>
-  <body>
-    <div id="root">
-      <p id="status" style="font-family:monospace;padding:16px;color:#888">Loading Ring Tester...</p>
-    </div>
-    <div id="debug" style="font-family:monospace;padding:16px;font-size:11px;color:#666;white-space:pre-wrap"></div>
-    <script>
-      // Debug log visible on screen
-      function debugLog(msg) {
-        var el = document.getElementById('debug');
-        if (el) el.textContent += new Date().toLocaleTimeString() + ' ' + msg + '\n';
-      }
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Weather – Even G2</title>
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
 
-      // Catch all JS errors
-      window.onerror = function(msg, src, line, col, err) {
-        debugLog('ERROR: ' + msg + ' at ' + src + ':' + line);
-        if (err && err.stack) debugLog('Stack: ' + err.stack);
-      };
+<body>
 
-      // Catch unhandled promise rejections (module load failures)
-      window.onunhandledrejection = function(e) {
-        var reason = e.reason;
-        var msg = reason instanceof Error ? reason.message + '\n' + reason.stack : String(reason);
-        debugLog('UNHANDLED REJECTION: ' + msg);
-      };
+<div id="app">
+  <h1>Settings</h1>
 
-      debugLog('HTML loaded, waiting for JS module...');
-    </script>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+  <button id="connectBtn">Connect glasses</button>
+  <button id="actionBtn">Refresh</button>
+
+  <div id="status">Weather ready</div>
+  <pre id="event-log" style="display:none"></pre>
+</div>
+
+<script type="module" src="/src/main.ts"></script>
+
+</body>
 </html>
