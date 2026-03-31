@@ -1,11 +1,8 @@
 {
-  "package_id": "com.nickustinov.weather",
-  "name": "Weather",
+  "package_id": "com.nickustinov.pong",
+  "name": "pong",
   "version": "1.0.0",
-  "description": "Weather forecast for Even G2",
+  "description": "Pong game for Even G2 smart glasses",
   "author": "nickustinov",
-  "entrypoint": "index.html",
-  "permissions": {
-    "network": ["api.open-meteo.com", "geocoding-api.open-meteo.com"]
-  }
+  "entrypoint": "index.html"
 }

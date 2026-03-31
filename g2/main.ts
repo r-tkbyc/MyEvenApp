@@ -1,8 +1,7 @@
 import { waitForEvenAppBridge } from '@evenrealities/even_hub_sdk'
 import type { AppActions, SetStatus } from '../_shared/app-types'
 import { appendEventLog } from '../_shared/log'
-import { initApp, refreshWeather } from './app'
-import { initUI } from './ui'
+import { initApp, startGame } from './app'
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -17,38 +16,34 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   })
 }
 
-export function createWeatherActions(setStatus: SetStatus): AppActions {
-  initUI()
+export function createPongActions(setStatus: SetStatus): AppActions {
   let connected = false
 
   return {
     async connect() {
-      setStatus('Weather: connecting to Even bridge...')
-      appendEventLog('Weather: connect requested')
+      setStatus('Pong: connecting to Even bridge...')
+      appendEventLog('Pong: connect requested')
 
       try {
         const bridge = await withTimeout(waitForEvenAppBridge(), 6000)
         await initApp(bridge)
         connected = true
-        setStatus('Weather: connected. DblTap=daily view.')
-        appendEventLog('Weather: connected to bridge')
+        setStatus('Pong: connected. Tap to start!')
+        appendEventLog('Pong: connected to bridge')
       } catch (err) {
-        console.error('[weather] connect failed', err)
-        setStatus('Weather: bridge not found. Running in mock mode.')
-        appendEventLog('Weather: connection failed')
+        console.error('[pong] connect failed', err)
+        setStatus('Pong: bridge not found.')
+        appendEventLog('Pong: connection failed')
       }
     },
 
     async action() {
       if (!connected) {
-        setStatus('Weather: not connected')
-        appendEventLog('Weather: action blocked (not connected)')
+        setStatus('Pong: not connected')
         return
       }
-
-      await refreshWeather()
-      setStatus('Weather: forecast refreshed')
-      appendEventLog('Weather: manual refresh via action button')
+      startGame()
+      setStatus('Pong: new game!')
     },
   }
 }

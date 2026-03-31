@@ -1,14 +1,13 @@
-import { createWeatherActions } from './main'
+import { createPongActions } from './main'
 import type { AppModule } from '../_shared/app-types'
 
 export const app: AppModule = {
-  id: 'weather',
-  name: 'Weather',
-  pageTitle: 'Settings',
-  connectLabel: 'Connect glasses',
-  actionLabel: 'Refresh',
-  initialStatus: 'Weather ready',
-  createActions: createWeatherActions,
+  id: 'pong',
+  name: 'Pong',
+  pageTitle: 'Pong',
+  autoConnect: true,
+  initialStatus: 'Pong ready',
+  createActions: createPongActions,
 }
 
 export default app

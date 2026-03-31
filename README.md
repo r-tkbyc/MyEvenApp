@@ -1,115 +1,126 @@
-# Weather Even G2
+# Pong for Even G2
 
 > See also: [G2 development notes](https://github.com/nickustinov/even-g2-notes/blob/main/G2.md) – hardware specs, UI system, input handling and practical patterns for Even Realities G2.
 
-Weather forecast for [Even Realities G2](https://www.evenrealities.com/) smart glasses.
+Pong game for [Even Realities G2](https://www.evenrealities.com/) smart glasses.
 
-Five screens – weekly forecast, current conditions, precipitation chart, wind chart and 18-hour hourly forecast – driven by the free [Open-Meteo](https://open-meteo.com/) API with no API key required.
+Player vs AI. Swipe to move your paddle, first to 7 wins. Global win count shared across all players via Redis.
 
-Uses native text containers with aligned multi-column layouts and small image overlays (weather icons, PNG labels). All within the G2's 4-container-per-page limit and 200x100 image size constraint.
+### Play now
 
-### Try it now
-
-Scan this QR code in the Even Realities app (Even Hub page) to use on your G2 glasses:
+Scan this QR code in the Even Realities app (Even Hub page) to play on your G2 glasses with the shared global score system:
 
 <img src="qr.png" width="200" />
 
-![Weekly forecast](screenshots/weather1.png)
-![Current conditions](screenshots/weather2.png)
-![Precipitation](screenshots/weather3.png)
-![Wind](screenshots/weather4.png)
+<p>
+  <img src="screenshot-splash.png" width="49%" />
+  <img src="screenshot-game.png" width="49%" />
+</p>
 
-## System architecture
+## Architecture
+
+The game uses three different page layouts, switching between them via `rebuildPageContainer`:
+
+- **Splash screen** – image container with logo + text container with instructions
+- **Gameplay** – text container with unicode grid (`□` empty, `▦` paddle, `●` ball, `│` center line)
+- **Game over** – image container with game over graphic + text container with score
+
+A hidden text container with `isEventCapture: 1` and minimal content (`' '`) is present on every page. This receives scroll/tap events without the firmware's internal text scrolling consuming swipe gestures.
+
+During gameplay, only `textContainerUpgrade` is called – no page rebuilds until the game ends.
 
 ```
-[G2 glasses] <--BLE--> [Even app / simulator] <--HTTP--> [Open-Meteo API]
+tick() → pushFrame() → sleep(remaining) → repeat
 ```
 
-No backend server needed. The browser calls Open-Meteo directly (free, CORS-enabled).
+The loop awaits each text push before scheduling the next tick. If a push is still in flight, the frame is silently dropped.
 
-## Screens
+### Global win count
 
-1. **Weekly forecast** – 4 containers: header (city + temp + condition), day names column, temperatures column, conditions column
-2. **Current conditions** – 4 containers: header, labels column, values column, 100x100 weather icon image
-3. **Precipitation** – 4 containers: header (total mm), time column, horizontal bar chart (Unicode block characters), umbrella icon image
-4. **Wind** – 4 containers: header (current speed + direction), time column, horizontal bar chart, wind icon image
-5. **Hourly forecast** – 2 text containers side by side, 9 hours each (18 hours total)
+The win count is shared across all players via a Redis-backed API (`/api/best-score`). The Vercel serverless function uses a Lua script for atomic compare-and-set – a new count is only written if it exceeds the current value. The Redis key is `pong-even-g2:best`.
 
-## Navigation
+On app start, the current win count is fetched and displayed on the splash screen. When the player wins a game, the count is incremented and submitted. If it exceeds the stored value, Redis is updated and the new count is shown immediately.
+
+Without `REDIS_URL` configured, scores won't persist between sessions.
+
+### Grid
+
+- 28 columns × 10 rows, no score display
+- Floating-point physics, snapped to integers at render time
+- ~80ms per tick (~12 frames/second)
+- Ball speed increases with each rally
+
+| Element | Character | Unicode |
+|---------|-----------|---------|
+| Empty | `□` | U+25A1 |
+| Paddle | `▦` | U+25A6 |
+| Ball | `●` | U+25CF |
+| Center line | `│` | U+2502 |
+
+## Controls
+
+Swipe directions are inverted (swipe forward = paddle down, swipe back = paddle up).
 
 | Input | Action |
 |---|---|
-| Swipe down | Next screen |
-| Swipe up | Previous screen |
-| Double tap | Refresh weather + go to first screen |
+| Tap | Start game / restart after game over |
+| Swipe forward (up) | Move paddle down |
+| Swipe back (down) | Move paddle up |
+| Double tap | Start game / restart after game over |
+
+## Project structure
+
+```
+g2/
+  index.ts       App module registration
+  main.ts        Bridge connection and auto-connect
+  app.ts         Game loop orchestrator
+  state.ts       Game state (paddles, ball, score, wins)
+  game.ts        Physics, collision, AI
+  renderer.ts    Text/image rendering, page layouts, frame push
+  events.ts      Event normalisation + input dispatch
+  layout.ts      Display and grid constants
+  logo.png       Splash screen logo (200×100)
+  gameover.png   Game over graphic (200×100)
+api/
+  best-score.js  Vercel serverless function (Redis)
+```
 
 ## Setup
 
 ```bash
 npm install
+npm run dev
 ```
 
-### Run with even-dev
-
-Requires [even-dev](https://github.com/BxNxM/even-dev) (Unified Even Hub Simulator).
+### Run with even-dev simulator
 
 ```bash
-# Symlink into even-dev (adjust paths to your local setup)
-ln -s /path/to/weather-even-g2/g2 /path/to/even-dev/apps/weather
-
-# Run
 cd /path/to/even-dev
-APP_NAME=weather ./start-even.sh
+REDIS_URL="redis://..." APP_PATH=/path/to/pong-even-g2 ./start-even.sh
 ```
 
-### Run standalone
+Set `REDIS_URL` to enable the global win count API. Without it, scores won't persist.
+
+### Run on real glasses
+
+Generate a QR code and scan it with the Even App:
 
 ```bash
-npm run dev
-```
-
-### Deploy to glasses
-
-```bash
-# Terminal 1: start dev server
-npm run dev
-
-# Terminal 2: generate QR code
-npm run qr
-
-# Scan QR code with Even App on your phone
+npm run dev   # keep running
+npm run qr    # generates QR code for http://<your-ip>:5173
 ```
 
 ### Package for distribution
 
 ```bash
-npm run pack
-# Creates weather.ehpk
-```
-
-## App architecture
-
-```
-g2/
-  index.ts         App module registration
-  main.ts          Bridge connection + settings UI bootstrap
-  app.ts           Thin orchestrator: initApp, refreshWeather
-  state.ts         WeatherData types, app state singleton, bridge holder
-  api.ts           Open-Meteo geocoding + forecast API client
-  renderer.ts      Screen rendering (text containers + image overlays)
-  events.ts        Event normalisation + screen dispatch
-  icons.ts         Canvas-based weather icon renderer (7 icon types)
-  layout.ts        Display dimension constants
-  ui.tsx           React settings panel (city search, connection)
-
-_shared/
-  app-types.ts     AppModule/AppActions contract
-  log.ts           Event log utility
+npm run pack  # builds and creates pong.ehpk
 ```
 
 ## Tech stack
 
-- **Weather API:** [Open-Meteo](https://open-meteo.com/) (free, no API key)
 - **G2 frontend:** TypeScript + [Even Hub SDK](https://www.npmjs.com/package/@evenrealities/even_hub_sdk)
-- **Settings UI:** React + [@jappyjan/even-realities-ui](https://www.npmjs.com/package/@jappyjan/even-realities-ui)
 - **Build:** [Vite](https://vitejs.dev/)
+- **Backend:** [Redis](https://redis.io/) via [ioredis](https://github.com/redis/ioredis) (global win count)
+- **Hosting:** [Vercel](https://vercel.com/) (serverless API + static frontend)
+- **CLI:** [evenhub-cli](https://www.npmjs.com/package/@evenrealities/evenhub-cli)

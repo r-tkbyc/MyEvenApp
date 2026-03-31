@@ -1,41 +1,62 @@
 import type { EvenAppBridge } from '@evenrealities/even_hub_sdk'
 import { appendEventLog } from '../_shared/log'
-import { fetchWeather, getSavedCity } from './api'
-import { state, setBridge } from './state'
-import { showScreen, showLoading, firstScreen } from './renderer'
-import { onEvenHubEvent, setRefreshWeather } from './events'
+import { TICK_MS } from './layout'
+import { game, setBridge, resetGame, fetchBestScore, submitScore } from './state'
+import { tick } from './game'
+import { initDisplay, pushFrame, showSplash } from './renderer'
+import { onEvenHubEvent, setStartGame } from './events'
 
-export async function refreshWeather(): Promise<void> {
-  const city = getSavedCity()
-  if (!city) {
-    appendEventLog('Weather: no city configured')
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function gameLoop(): Promise<void> {
+  appendEventLog('Pong: game loop started')
+  while (game.running) {
+    const start = Date.now()
+
+    tick()
+    await pushFrame()
+
+    const elapsed = Date.now() - start
+    await sleep(Math.max(0, TICK_MS - elapsed))
+  }
+
+  if (game.over) {
+    if (game.playerScore >= 7) {
+      game.highScore++
+      await submitScore(game.highScore)
+    }
+    await pushFrame()
+    appendEventLog(`Pong: game over ${game.playerScore}-${game.aiScore}`)
+  }
+}
+
+export function startGame(): void {
+  if (game.running) return
+  if (game.over) {
+    game.over = false
+    void showSplash()
+    appendEventLog('Pong: back to splash')
     return
   }
-
-  try {
-    state.weather = await fetchWeather(city)
-    appendEventLog(`Weather: refreshed for ${city.name}`)
-  } catch (err) {
-    console.error('[weather] refreshWeather failed', err)
-    appendEventLog(`Weather: refresh failed: ${err instanceof Error ? err.message : String(err)}`)
-  }
-
-  firstScreen()
-  await showScreen()
+  resetGame()
+  void pushFrame().then(() => {
+    void gameLoop()
+  })
+  appendEventLog('Pong: new game started')
 }
 
 export async function initApp(appBridge: EvenAppBridge): Promise<void> {
   setBridge(appBridge)
-  setRefreshWeather(refreshWeather)
+  setStartGame(startGame)
 
   appBridge.onEvenHubEvent((event) => {
     onEvenHubEvent(event)
   })
 
-  await showLoading()
-  await refreshWeather()
-
-  setInterval(() => {
-    void refreshWeather()
-  }, 15 * 60_000)
+  await initDisplay()
+  await fetchBestScore()
+  await pushFrame()
+  appendEventLog('Pong: ready. Tap to start.')
 }

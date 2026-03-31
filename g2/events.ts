@@ -1,17 +1,15 @@
 import { OsEventTypeList, type EvenHubEvent } from '@evenrealities/even_hub_sdk'
 import { appendEventLog } from '../_shared/log'
-import { state } from './state'
-import { showScreen, nextScreen, prevScreen, firstScreen } from './renderer'
+import { game } from './state'
+import { movePlayerUp, movePlayerDown } from './game'
 
-// Forward declaration – set by app.ts to avoid circular import
-let refreshWeatherFn: () => Promise<void> = async () => {}
+let startGameFn: () => void = () => {}
 
-export function setRefreshWeather(fn: () => Promise<void>): void {
-  refreshWeatherFn = fn
+export function setStartGame(fn: () => void): void {
+  startGameFn = fn
 }
 
-// Scroll cooldown to prevent duplicate actions from rapid swipes
-const SCROLL_COOLDOWN_MS = 300
+const SCROLL_COOLDOWN_MS = 100
 let lastScrollTime = 0
 
 function scrollThrottled(): boolean {
@@ -20,10 +18,6 @@ function scrollThrottled(): boolean {
   lastScrollTime = now
   return false
 }
-
-// ---------------------------------------------------------------------------
-// Event normalisation
-// ---------------------------------------------------------------------------
 
 export function resolveEventType(event: EvenHubEvent): OsEventTypeList | undefined {
   const raw =
@@ -53,43 +47,33 @@ export function resolveEventType(event: EvenHubEvent): OsEventTypeList | undefin
     if (v.includes('SCROLL_BOTTOM') || v.includes('DOWN')) return OsEventTypeList.SCROLL_BOTTOM_EVENT
   }
 
-  // CLICK_EVENT = 0 can be normalised to undefined by the SDK's fromJson.
-  // Any event from a container without a resolved type is treated as a click.
   if (event.listEvent || event.textEvent || event.sysEvent) return OsEventTypeList.CLICK_EVENT
 
   return undefined
 }
 
-// ---------------------------------------------------------------------------
-// Dispatcher
-// ---------------------------------------------------------------------------
-
 export function onEvenHubEvent(event: EvenHubEvent): void {
   const eventType = resolveEventType(event)
-  appendEventLog(`Event: type=${String(eventType)} screen=${state.screen}`)
+  appendEventLog(`Event: type=${String(eventType)} running=${game.running}`)
 
   switch (eventType) {
     case OsEventTypeList.CLICK_EVENT:
-      // Tap does nothing – scroll to navigate
-      break
-
-    case OsEventTypeList.SCROLL_BOTTOM_EVENT:
-      if (!scrollThrottled()) {
-        prevScreen()
-        void showScreen()
+    case OsEventTypeList.DOUBLE_CLICK_EVENT:
+      if (!game.running) {
+        startGameFn()
       }
       break
 
     case OsEventTypeList.SCROLL_TOP_EVENT:
-      if (!scrollThrottled()) {
-        nextScreen()
-        void showScreen()
+      if (!scrollThrottled() && game.running) {
+        movePlayerDown()
       }
       break
 
-    case OsEventTypeList.DOUBLE_CLICK_EVENT:
-      firstScreen()
-      void refreshWeatherFn()
+    case OsEventTypeList.SCROLL_BOTTOM_EVENT:
+      if (!scrollThrottled() && game.running) {
+        movePlayerUp()
+      }
       break
   }
 }
