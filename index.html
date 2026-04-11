@@ -3,17 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Weather – Even G2</title>
-  <script type="module" crossorigin src="./assets/index-CrOr90D-.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-B9miV6Kr.css">
+  <title>FreeWalk – Even G2</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script type="module" crossorigin src="./assets/index-Du9WGHlk.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-rfwOFxY1.css">
 </head>
 
 <body>
 
 <div id="app">
-  <h1>Weather for G2</h1>
+  <h1>FreeWalk</h1>
   <div id="status">Initializing...</div>
-  <div id="weather-info"></div>
+
+  <div id="nav-info"></div>
+
+  <div style="position:relative;margin-bottom:8px">
+    <input id="place-search" type="text" placeholder="Search place..." style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box;font-size:14px">
+    <div id="search-results" style="position:absolute;left:0;right:0;background:white;border:1px solid #ccc;border-top:none;border-radius:0 0 4px 4px;max-height:200px;overflow-y:auto;z-index:1000;display:none"></div>
+  </div>
+
+  <div id="map"></div>
+
+  <div style="margin:8px 0">
+    <button id="btn-compass" style="padding:6px 16px;border:1px solid #999;border-radius:4px;cursor:pointer">Enable Compass</button>
+  </div>
+
+  <div style="margin-bottom:8px">
+    <strong>History</strong>
+    <div id="history-list"></div>
+  </div>
+
   <pre id="event-log"></pre>
 </div>
 
