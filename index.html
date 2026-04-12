@@ -1,39 +1,516 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Even Sliding Puzzle</title>
+    <title>EvenSlidingPuzzle - Classic Sliding Puzzle for Even Realities G2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+      :root {
+        --tc-1st: #232323;
+        --tc-2nd: #7B7B7B;
+        --tc-highlight: #FFFFFF;
+        --tc-red: #FF4535;
+        --tc-green: #4BB954;
+
+        --bc-1st: #FFFFFF;
+        --bc-2nd: #F6F6F6;
+        --bc-3rd: #EEEEEE;
+        --bc-4th: #E4E4E4;
+        --bc-accent: #FEF991;
+        --bc-highlight: #232323;
+
+        --bg-primary: var(--bc-3rd);
+        --bg-secondary: var(--bc-2nd);
+        --bg-card: var(--bc-1st);
+        --bg-tertiary: var(--bc-4th);
+        --text-primary: var(--tc-1st);
+        --text-secondary: var(--tc-2nd);
+        --accent: var(--bc-accent);
+        --accent-dark: #E5E082;
+        --border: var(--bc-4th);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
       body {
-        font-family: system-ui, sans-serif;
-        background: #111;
-        color: #eee;
+        font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        line-height: 1.5;
+        min-height: 100vh;
+        font-size: 15px;
+        font-weight: 400;
+        letter-spacing: -0.15px;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      .container {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 24px 12px;
+      }
+
+      .header {
+        text-align: center;
+        padding: 24px 0;
+        margin-bottom: 24px;
+      }
+
+      .logo {
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
-        height: 100vh;
-        margin: 0;
+        gap: 12px;
+        margin-bottom: 12px;
       }
-      #status {
-        margin-top: 2rem;
-        font-family: monospace;
-        color: #888;
+
+      .logo-text {
+        font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        color: var(--text-primary);
       }
-      button {
-        margin-top: 1rem;
-        padding: 0.5rem 1rem;
-        font-size: 1rem;
+
+      .logo-text .dot {
+        color: var(--text-primary);
+        font-size: 20px;
+        vertical-align: middle;
+        margin: 0 1px;
+      }
+
+      .subtitle {
+        color: var(--text-secondary);
+        font-size: 13px;
+        font-weight: 400;
+        letter-spacing: -0.13px;
+        margin-top: 8px;
+      }
+
+      .toc {
+        background: var(--bg-card);
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 24px;
+      }
+
+      .toc h2 {
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+      }
+
+      .toc-list {
+        list-style: none;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 6px;
+      }
+
+      .toc-list a {
+        color: var(--text-primary);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 400;
+        letter-spacing: -0.13px;
+        display: block;
+        padding: 6px 10px;
+        background: var(--accent);
+        border-radius: 6px;
+        transition: background 0.2s, transform 0.2s;
+      }
+
+      .toc-list a:hover {
+        background: var(--accent-dark);
+        transform: translateY(-1px);
+      }
+
+      .section {
+        margin-bottom: 12px;
+      }
+
+      details {
+        background: var(--bg-card);
+        border-radius: 6px;
+        overflow: hidden;
+      }
+
+      details[open] {
+        box-shadow: 0 0 0 2px var(--accent);
+      }
+
+      summary {
+        padding: 16px;
         cursor: pointer;
+        font-weight: 500;
+        font-size: 17px;
+        letter-spacing: -0.17px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        user-select: none;
+        list-style: none;
+        transition: background 0.2s;
+      }
+
+      summary::-webkit-details-marker {
+        display: none;
+      }
+
+      summary::before {
+        content: '▸';
+        font-size: 12px;
+        color: var(--text-primary);
+        background: var(--accent);
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: transform 0.2s;
+      }
+
+      details[open] summary::before {
+        transform: rotate(90deg);
+      }
+
+      summary:hover {
+        background: var(--bg-secondary);
+      }
+
+      .section-content {
+        padding: 0 16px 16px;
+        color: var(--text-secondary);
+      }
+
+      .section-content h3 {
+        color: var(--text-primary);
+        font-size: 15px;
+        font-weight: 500;
+        letter-spacing: -0.15px;
+        margin: 16px 0 8px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .section-content h3:first-child {
+        margin-top: 0;
+      }
+
+      .section-content p {
+        margin: 8px 0;
+        font-size: 15px;
+        font-weight: 300;
+        letter-spacing: -0.15px;
+      }
+
+      .section-content ul,
+      .section-content ol {
+        margin: 8px 0 8px 20px;
+        font-size: 15px;
+        font-weight: 300;
+        letter-spacing: -0.15px;
+        padding-left: 8px;
+      }
+
+      .section-content li {
+        margin: 6px 0;
+      }
+
+      code {
+        font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+        background: var(--bg-secondary);
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 13px;
+        color: var(--text-primary);
+      }
+
+      .gesture-grid {
+        display: grid;
+        gap: 6px;
+        margin: 12px 0;
+      }
+
+      .gesture-card {
+        background: var(--bg-secondary);
+        border-radius: 6px;
+        padding: 12px 16px;
+        font-size: 15px;
+        font-weight: 300;
+      }
+
+      .gesture-card strong {
+        color: var(--text-primary);
+        display: block;
+        margin-bottom: 4px;
+        font-weight: 500;
+      }
+
+      .tip {
+        background: var(--accent);
+        padding: 12px 16px;
+        margin: 12px 0;
+        border-radius: 6px;
+        font-size: 15px;
+        font-weight: 300;
+      }
+
+      .tip strong {
+        color: var(--text-primary);
+        font-weight: 500;
+      }
+
+      .footer {
+        text-align: center;
+        padding: 24px 0;
+        margin-top: 24px;
+        color: var(--text-secondary);
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: -0.11px;
+      }
+
+      .footer a {
+        color: var(--text-primary);
+        text-decoration: underline;
+      }
+
+      /* Simulator status pill (kept wired for src/main.ts) */
+      .sim-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      #status {
+        font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+        font-size: 12px;
+        color: var(--text-secondary);
+        background: var(--bg-secondary);
+        padding: 6px 12px;
+        border-radius: 6px;
+      }
+
+      #btn-reset {
+        padding: 6px 14px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-primary);
+        background: var(--accent);
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.2s;
+      }
+
+      #btn-reset:hover {
+        background: var(--accent-dark);
+        transform: translateY(-1px);
       }
     </style>
     <script type="module" crossorigin src="./assets/index-BIfHCPBn.js"></script>
   </head>
   <body>
-    <h1>Even Sliding Puzzle</h1>
-    <p>Simulator UI</p>
-    <button id="btn-reset">Reset / Sync</button>
-    <div id="status">Loading...</div>
+    <div class="container">
+      <header class="header">
+        <div class="logo">
+          <span class="logo-text">EVEN<span class="dot">•</span>PUZZLE</span>
+        </div>
+        <p class="subtitle">Classic Sliding Puzzle for Even Realities G2</p>
+        <div class="sim-bar">
+          <button id="btn-reset" type="button">Reset / Sync</button>
+          <div id="status">Loading...</div>
+        </div>
+      </header>
+
+      <nav class="toc">
+        <h2>Quick Navigation</h2>
+        <ul class="toc-list">
+          <li><a href="#getting-started">Getting Started</a></li>
+          <li><a href="#game-modes">Game Modes</a></li>
+          <li><a href="#controls">Controls</a></li>
+          <li><a href="#rules">Rules</a></li>
+          <li><a href="#menu-options">Menu Options</a></li>
+          <li><a href="#tips">Tips</a></li>
+        </ul>
+      </nav>
+
+      <section class="section" id="getting-started">
+        <details open>
+          <summary>Getting Started</summary>
+          <div class="section-content">
+            <h3>Welcome</h3>
+            <p>A classic number sliding puzzle tuned for the Even Realities G2. Scroll to pick a tile, tap to slide, and race toward an ordered board.</p>
+
+            <h3>Launch</h3>
+            <p>Open EvenSlidingPuzzle from Even Hub. You'll see the title screen on your glasses with a list of grid modes.</p>
+
+            <h3>Display</h3>
+            <ul>
+              <li><strong>Left:</strong> Mode label, move counter, and control hints</li>
+              <li><strong>Right:</strong> The square board with numbered tiles</li>
+              <li><strong>Focus:</strong> The currently selectable tile is shown in inverted colors</li>
+            </ul>
+          </div>
+        </details>
+      </section>
+
+      <section class="section" id="game-modes">
+        <details>
+          <summary>Game Modes</summary>
+          <div class="section-content">
+            <h3>3x3 Puzzle</h3>
+            <p>Eight tiles numbered 1–8 plus one blank. Quick to pick up, friendly for warm-ups and casual play.</p>
+
+            <h3>4x4 Puzzle</h3>
+            <p>Fifteen tiles numbered 1–15 plus one blank. The classic challenge — a proper test of planning.</p>
+
+            <div class="tip">
+              <strong>Solvability:</strong> Every board is shuffled from the solved state using random legal moves, so every puzzle you start is guaranteed to be solvable.
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="section" id="controls">
+        <details>
+          <summary>Controls</summary>
+          <div class="section-content">
+            <p>Three gestures on your G2 touchpad run the whole game:</p>
+
+            <div class="gesture-grid">
+              <div class="gesture-card">
+                <strong>Scroll</strong>
+                Swipe up or down to cycle the focus through adjacent movable tiles (or through menu items on the title and menu screens).
+              </div>
+
+              <div class="gesture-card">
+                <strong>Tap</strong>
+                Slide the focused tile into the blank space, select a grid size, or confirm a menu choice.
+              </div>
+
+              <div class="gesture-card">
+                <strong>Double Tap</strong>
+                Open the in-game menu while playing (Resume, Reset, Title).
+              </div>
+            </div>
+
+            <h3>Making a Move</h3>
+            <ol>
+              <li><strong>Scroll</strong> to cycle through the tiles next to the blank</li>
+              <li><strong>Tap</strong> to slide that tile into the blank</li>
+              <li>Repeat until the board reads 1, 2, 3 … in order</li>
+            </ol>
+          </div>
+        </details>
+      </section>
+
+      <section class="section" id="rules">
+        <details>
+          <summary>Rules</summary>
+          <div class="section-content">
+            <h3>Objective</h3>
+            <p>Arrange every tile in ascending order, with the blank space in the bottom-right corner. The target layout for 3x3 is:</p>
+            <p><code>1 2 3 / 4 5 6 / 7 8 _</code></p>
+
+            <h3>Legal Moves</h3>
+            <ul>
+              <li>Only tiles directly adjacent to the blank can slide</li>
+              <li>Each tap counts as one move on the <strong>Moves</strong> counter</li>
+              <li>There is no time limit — take your time to plan multi-step sequences</li>
+            </ul>
+
+            <h3>Solved State</h3>
+            <p>When the tiles are in order, the board outline thickens and a <code>★ Solved!</code> line appears next to your final move count. Double-tap to open the menu and pick a new game.</p>
+          </div>
+        </details>
+      </section>
+
+      <section class="section" id="menu-options">
+        <details>
+          <summary>Menu Options</summary>
+          <div class="section-content">
+            <p>Double-tap during play to open the in-game menu. Scroll to browse, tap to confirm.</p>
+
+            <h3>Back</h3>
+            <p>Return to the current puzzle and keep playing. Your move count is preserved.</p>
+
+            <h3>Reset</h3>
+            <p>Reshuffle the current grid size from scratch. Move count starts at zero.</p>
+
+            <h3>Title</h3>
+            <p>Return to the title screen to pick a different grid size.</p>
+          </div>
+        </details>
+      </section>
+
+      <section class="section" id="tips">
+        <details>
+          <summary>Tips</summary>
+          <div class="section-content">
+            <h3>Solving Strategy</h3>
+            <ul>
+              <li>Solve the top row first, then the left column, then treat the remaining sub-grid as a smaller puzzle</li>
+              <li>On 4x4, finish each row and column in pairs — this avoids the classic "last three tiles" trap</li>
+              <li>Count your taps: every scroll-to-focus that doesn't land on the tile you wanted is a free move saved</li>
+            </ul>
+
+            <h3>Navigation</h3>
+            <ul>
+              <li>The focus cycles only through tiles adjacent to the blank, so scrolling is always short</li>
+              <li>Double-tap is reserved for the menu — a single tap never opens it</li>
+              <li>From the title screen, a single tap on either mode starts a fresh board</li>
+            </ul>
+          </div>
+        </details>
+      </section>
+
+      <footer class="footer">
+        <p>EvenSlidingPuzzle | Built for <a href="https://evenrealities.com" target="_blank">Even Realities</a> G2</p>
+      </footer>
+    </div>
+
+    <script>
+      function openSectionForHash(idOrEmpty) {
+        const id = idOrEmpty != null ? idOrEmpty : window.location.hash.substring(1);
+        if (!id) return;
+        const section = document.getElementById(id);
+        if (section) {
+          const details = section.querySelector('details');
+          if (details) details.setAttribute('open', '');
+        }
+      }
+      window.addEventListener('hashchange', function () { openSectionForHash(); });
+      document.addEventListener('click', function (e) {
+        const a = e.target.closest('a[href^="#"]');
+        if (!a) return;
+        const id = a.getAttribute('href').substring(1);
+        if (id) openSectionForHash(id);
+      });
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () { openSectionForHash(); });
+      } else {
+        openSectionForHash();
+      }
+    </script>
   </body>
 </html>
