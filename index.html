@@ -1,41 +1,39 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>FreeWalk – Even G2</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script type="module" crossorigin src="./assets/index-yGU-gfVz.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-rfwOFxY1.css">
-</head>
-
-<body>
-
-<div id="app">
-  <h1>FreeWalk</h1>
-  <div id="status">Initializing...</div>
-
-  <div id="nav-info"></div>
-
-  <div style="position:relative;margin-bottom:8px">
-    <input id="place-search" type="text" placeholder="Search place..." style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box;font-size:14px">
-    <div id="search-results" style="position:absolute;left:0;right:0;background:white;border:1px solid #ccc;border-top:none;border-radius:0 0 4px 4px;max-height:200px;overflow-y:auto;z-index:1000;display:none"></div>
-  </div>
-
-  <div id="map"></div>
-
-  <div style="margin:8px 0">
-    <button id="btn-compass" style="padding:6px 16px;border:1px solid #999;border-radius:4px;cursor:pointer">Enable Compass</button>
-  </div>
-
-  <div style="margin-bottom:8px">
-    <strong>History</strong>
-    <div id="history-list"></div>
-  </div>
-
-  <pre id="event-log"></pre>
-</div>
-
-
-</body>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Even Sliding Puzzle</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        background: #111;
+        color: #eee;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+      }
+      #status {
+        margin-top: 2rem;
+        font-family: monospace;
+        color: #888;
+      }
+      button {
+        margin-top: 1rem;
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-DMsz7I7K.js"></script>
+  </head>
+  <body>
+    <h1>Even Sliding Puzzle</h1>
+    <p>Simulator UI</p>
+    <button id="btn-reset">Reset / Sync</button>
+    <div id="status">Loading...</div>
+  </body>
 </html>
